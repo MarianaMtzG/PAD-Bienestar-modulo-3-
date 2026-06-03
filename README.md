@@ -1,38 +1,41 @@
 #include <stdio.h>
-#include <stdlib.h>  
- 
-// Definición de la estructura para cada nodo de la cola
+#include <stdlib.h>
+
+// 1. Estructura que representa cada nodo (turno) en la cola
 typedef struct Nodo {
-    int numeroTurno;       // Dato que almacena el número de turno
-    struct Nodo* siguiente; // Apuntador al siguiente nodo en la cola
+    int numeroTurno;        // Almacena el número de turno asignado
+    struct Nodo* siguiente; // Apuntador al siguiente nodo en la fila
 } Nodo;
 
-// Estructura que controla la cola (apuntadores al inicio y al final)
+// Estructura que controla los extremos de la cola dinámica
 typedef struct Cola {
-    Nodo* inicio;
-    Nodo* fin;
+    Nodo* inicio; // Apunta al primer elemento (próximo a ser atendido)
+    Nodo* fin;    // Apunta al último elemento (el recién llegado)
 } Cola;
 
-// Funciones para la gestión de la cola
+// Prototipos de las funciones
 void inicializarCola(Cola* q);
 int estaVacia(Cola* q);
 void agregarTurno(Cola* q, int turno);
 void atenderTurno(Cola* q);
-void mostrarCola(Cola q); 
+void mostrarCola(Cola q);
 
-// Función principal
+// Función Principal
 int main() {
-    Cola miCola; 
-    inicializarCola(&miCola); // Se inicializan los apuntadores en NULL
+    Cola miCola;
+    inicializarCola(&miCola); // Inicializa los apuntadores en NULL
     
     int opcion, turno;
 
     do {
-        printf("\n=== SISTEMA DE TURNOS PAD-BIENESTAR ===\n");
-        printf("1. Agregar un turno\n");
-        printf("2. Atender un turno\n");
-        printf("3. Mostrar la cola de turnos\n");
-        printf("4. Salir\n");
+        // Menú interactivo para el usuario
+        printf("\n=========================================\n");
+        printf("   SISTEMA DE TURNOS PAD-BIENESTAR\n");
+        printf("=========================================\n");
+        printf("1. Agregar un turno (Registrar)\n");
+        printf("2. Atender un turno (FIFO)\n");
+        printf("3. Mostrar la cola de turnos en espera\n");
+        printf("4. Salir del programa\n");
         printf("Seleccione una opcion: ");
         scanf("%d", &opcion);
 
@@ -49,14 +52,14 @@ int main() {
                 mostrarCola(miCola);
                 break;
             case 4:
-                printf("Saliendo del sistema. ¡Que tenga un buen dia!\n");
+                printf("Cerrando el sistema PAD-Bienestar. ¡Hasta luego!\n");
                 break;
             default:
-                printf("Opcion invalida. Intente de nuevo.\n");
+                printf("Opcion no valida. Intente de nuevo.\n");
         }
     } while (opcion != 4);
 
-    // Liberar memoria restante antes de salir si la cola no quedó vacía
+    // Limpieza de memoria: Liberar nodos restantes si el usuario sale antes de vaciar la cola
     while (!estaVacia(&miCola)) {
         atenderTurno(&miCola);
     }
@@ -64,86 +67,90 @@ int main() {
     return 0;
 }
 
-// Inicializa la cola configurando los apuntadores de inicio y fin como vacíos (NULL)
+// Inicializa la estructura de la cola apuntando a NULL (cola vacía)
 void inicializarCola(Cola* q) {
     q->inicio = NULL;
     q->fin = NULL;
 }
 
-// Valida si la cola se encuentra vacía
+// Función auxiliar para validar si la cola carece de elementos
 int estaVacia(Cola* q) {
     return (q->inicio == NULL);
 }
 
 // Inserta un nuevo turno al final de la cola (Enqueue)
 void agregarTurno(Cola* q, int turno) {
-    // Asignación dinámica de memoria para el nuevo nodo
+    // Asignación dinámica de memoria mediante malloc
     Nodo* nuevoNodo = (Nodo*)malloc(sizeof(Nodo));
     
-    // Validar si la memoria se asignó correctamente
+    // Validación en caso de que el sistema se quede sin memoria RAM
     if (nuevoNodo == NULL) {
-        printf("Error: No hay memoria suficiente para registrar el turno.\n");
+        printf("Error de sistema: No se pudo asignar memoria para el turno.\n");
         return;
     }
 
-    // Asignar los valores al nuevo nodo
+    // Configuración de los datos del nuevo nodo
     nuevoNodo->numeroTurno = turno;
-    nuevoNodo->siguiente = NULL;
+    nuevoNodo->siguiente = NULL; // Al ser el último, no tiene a nadie detrás
 
     // Si la cola está vacía, el nuevo nodo es tanto el inicio como el fin
     if (estaVacia(q)) {
         q->inicio = nuevoNodo;
         q->fin = nuevoNodo;
     } else {
-        // Si ya hay nodos, el último apunta al nuevo, y el fin se actualiza
+        // Si ya hay elementos, el nodo que estaba al final ahora apunta al nuevo
         q->fin->siguiente = nuevoNodo;
+        // El apuntador de control 'fin' se actualiza al nuevo nodo
         q->fin = nuevoNodo;
     }
-    printf("Turno %d registrado exitosamente.\n", turno);
+    printf("Exito: Turno %d agregado correctamente a la fila.\n", turno);
 }
 
-// Elimina y atiende el primer turno de la cola (Dequeue - Principio FIFO)
+// Elimina y atiende al usuario al inicio de la cola (Dequeue - FIFO)
 void atenderTurno(Cola* q) {
-    // Validación: Comportamiento cuando la cola está vacía
+    // Validación del comportamiento cuando la cola se encuentre vacía
     if (estaVacia(q)) {
-        printf("No hay turnos pendientes en la cola. El sistema esta vacio.\n");
+        printf("Aviso: No hay turnos en espera. La cola esta vacia.\n");
         return;
     }
 
-    // Apuntador temporal para no perder la referencia del nodo a eliminar
+    // Guardamos la dirección del nodo que vamos a eliminar en un apuntador temporal
     Nodo* temporal = q->inicio;
 
-    printf("Atendiendo al turno: %d\n", temporal->numeroTurno);
+    printf("Atendiendo en ventanilla al Turno: %d\n", temporal->numeroTurno);
 
-    // Desplazar el inicio de la cola al siguiente nodo
+    // Desplazamos el inicio de la cola al siguiente turno
     q->inicio = q->inicio->siguiente;
 
-    // Si al mover el inicio la cola queda vacía, el fin también debe ser NULL
+    // Si al mover el inicio la cola se quedó sin nodos, el puntero fin también debe ir a NULL
     if (q->inicio == NULL) {
         q->fin = NULL;
     }
 
-    // Liberar de manera segura la memoria dinámica del nodo atendido
+    // Liberación de la memoria dinámica asignada previamente al nodo atendido
     free(temporal);
 }
 
-// Recorre la cola de principio a fin para mostrar el estado actual
+// Muestra en pantalla el estado actual y orden de los turnos en espera
 void mostrarCola(Cola q) {
-    // Validación: Comportamiento cuando la cola está vacía
+    // Validación si no hay elementos que mostrar
     if (q.inicio == NULL) {
-        printf("La cola de turnos esta vacia actualmente.\n");
+        printf("La cola actual se encuentra vacia.\n");
         return;
     }
 
+    // Apuntador auxiliar para recorrer la lista sin perder el control de la estructura original
     Nodo* actual = q.inicio;
-    printf("\n--- ESTADO ACTUAL DE LA COLA ---\n");
-    printf("Inicio -> ");
     
-    // Bucle para recorrer cada nodo dinámico hasta llegar al final (NULL)
+    printf("\n--- ESTADO DE LA FILA DE ESPERA ---\n");
+    printf("PROXIMO A ATENDER -> ");
+    
+    // Ciclo para recorrer e imprimir cada nodo hasta llegar al final de la cola
     while (actual != NULL) {
         printf("[%d] ", actual->numeroTurno);
-        actual = actual->siguiente;
-        
+        actual = actual->siguiente; // Avanza al siguiente nodo
     }
-    printf("<- Fin\n");
+    printf("<- ULTIMO EN LLEGAR\n");
 }
+    
+
